@@ -1,0 +1,9 @@
+node_modules
+lib
+.env
+
+.idea
+
+.DS_Store
+
+*.log

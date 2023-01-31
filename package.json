@@ -1,0 +1,40 @@
+{
+  "name": "@spacemonkey/openbook-crank",
+  "version": "1.0.0",
+  "description": "Crank openbook markets",
+  "repository": "https://github.com/SpaceMonkeyForever/openbook-crank",
+  "author": {
+    "name": "spacemonkey",
+    "url": "https://twitter.com/RealSpaceMonkey"
+  },
+  "license": "MIT",
+  "scripts": {
+    "crank": "ts-node src/scripts/crank.ts"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.1",
+    "@types/bn.js": "^5.1.0",
+    "@types/node": "^15.12.4",
+    "@types/yargs": "latest",
+    "cross-env": "^7.0.2",
+    "ts-node": "^10.9.1",
+    "typedoc": "^0.22.5",
+    "typescript": "^4.6.3"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "dependencies": {
+    "@project-serum/serum": "^0.13.65",
+    "@solana/spl-token": "^0.1.6",
+    "@solana/web3.js": "^1.43.5",
+    "bn.js": "^5.1.0",
+    "dotenv": "^10.0.0"
+  },
+  "resolutions": {
+    "bn.js": "5.1.3",
+    "@types/bn.js": "5.1.0",
+    "@solana/web3.js": "1.43.5"
+  }
+}
