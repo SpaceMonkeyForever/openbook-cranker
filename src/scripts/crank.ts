@@ -44,7 +44,7 @@ const priorityMarkets: number[] = JSON.parse(HIGH_FEE_MARKETS || "[0,1]");
 const priorityQueueLimit = parseInt(PRIORITY_QUEUE_LIMIT || "100");
 const defaultPriorityCuPrice = parseInt(DEFAULT_CU_PRICE || "0");
 const priorityCuPrice = parseInt(PRIORITY_CU_PRICE || "100000");
-const CuLimit = parseInt(PRIORITY_CU_LIMIT || "35000");
+const CuLimit = parseInt(PRIORITY_CU_LIMIT || "50000");
 const serumProgramId = new PublicKey(
   PROGRAM_ID || cluster == 'mainnet'
     ? 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'
