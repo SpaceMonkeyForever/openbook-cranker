@@ -17,6 +17,16 @@ make sure to create a JSON file containing the keypair formatted as a byte array
 ENDPOINT_URL=... KEYPAIR=./path/to/wallet.json ./start-cranker.sh
 ```
 
+to run in the background, pass "-d" or "--daemon"
+
+env args to pay attention to:
+
+```
+  HIGH_FEE_MARKETS,      // markets to apply a priority fee for e.g. [0,1] to apply on the first two markets in markets.json
+  DEFAULT_CU_PRICE,     // extra microlamports per cu for any market
+  PRIORITY_CU_PRICE,     // extra microlamports per cu for high fee markets
+```
+
 #### TODO:
 
 - Crank multiple markets in the same TX
