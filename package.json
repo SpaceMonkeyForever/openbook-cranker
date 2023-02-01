@@ -30,7 +30,8 @@
     "@solana/spl-token": "^0.1.6",
     "@solana/web3.js": "^1.43.5",
     "bn.js": "^5.1.0",
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "tslog": "^3.3.4"
   },
   "resolutions": {
     "bn.js": "5.1.3",

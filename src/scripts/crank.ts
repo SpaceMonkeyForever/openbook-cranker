@@ -10,7 +10,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  ComputeBudgetProgram,
+  ComputeBudgetProgram, BlockhashWithExpiryBlockHeight,
 } from '@solana/web3.js';
 import { getMultipleAccounts, sleep } from '../utils/utils';
 import BN from 'bn.js';
@@ -20,6 +20,7 @@ import {
   Market,
 } from '@project-serum/serum';
 import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { Logger } from 'tslog';
 
 const {
   ENDPOINT_URL,
@@ -59,9 +60,25 @@ const payer = Keypair.fromSecretKey(
   ),
 );
 
-console.log('openbook-cranker', payer.publicKey.toString());
+const log: Logger = new Logger({name: "openbook-cranker", displayFunctionName: false, displayFilePath: "hidden", minLevel: "info"});
+
+log.info(payer.publicKey.toString());
 
 const connection = new Connection(ENDPOINT_URL!, 'processed' as Commitment);
+
+let recentBlockhash: BlockhashWithExpiryBlockHeight;
+connection.getLatestBlockhash(
+  "finalized"
+).then((blockhash) => {recentBlockhash = blockhash;});
+
+setInterval(
+  async () =>
+    (recentBlockhash = await connection.getLatestBlockhash(
+      "finalized"
+    )),
+  20 * 1000,
+);
+
 
 async function run() {
   const spotMarkets = await Promise.all(
@@ -146,7 +163,9 @@ async function run() {
           limit: consumeEventsLimit,
           programId: serumProgramId,
         });
-        const transaction = new Transaction();
+        const transaction = new Transaction({
+          ...recentBlockhash,
+        });
         transaction.add(
           ComputeBudgetProgram.setComputeUnitLimit({
             units: CuLimit,
@@ -162,21 +181,17 @@ async function run() {
         }
         transaction.add(instr);
 
-        console.log(
-          'market',
-          i,
-          'sending consume events for',
-          events.length,
-          'events',
-        );
-        console.log(await connection.sendTransaction(transaction, [payer], {
+        log.info(`market ${i} sending consume events for ${events.length} events`);
+
+        transaction.sign(payer);
+        connection.sendRawTransaction(transaction.serialize(), {
           skipPreflight: true,
           maxRetries: 2,
-        }));
+        }).then(x => log.info(`Cranked market ${i}: ${x}`));
       }
       await sleep(interval);
     } catch (e) {
-      console.error(e);
+      log.error(e);
     }
   }
 }
