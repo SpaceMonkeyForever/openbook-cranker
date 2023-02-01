@@ -77,7 +77,8 @@ setInterval(
     (recentBlockhash = await connection.getLatestBlockhash(
       "finalized"
     )),
-  20 * 1000,
+  // need to be frequent else we will be sending same TX signature often
+  1000,
 );
 
 
