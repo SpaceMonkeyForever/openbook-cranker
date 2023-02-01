@@ -14,7 +14,13 @@ yarn install
 make sure to create a JSON file containing the keypair formatted as a byte array e.g. [1,3,4...]
 
 ```
-ENDPOINT_URL=... KEYPAIR=./path/to/wallet.json ./start-cranker.sh
+ENDPOINT_URL=... WALLET_PATH=./path/to/wallet.json ./start-cranker.sh
+```
+
+Or run with KEYPAIR directly:
+
+```
+ENDPOINT_URL=... KEYPAIR=[1,3,4...] ./start-cranker.sh
 ```
 
 to run in the background, pass "-d" or "--daemon"

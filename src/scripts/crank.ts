@@ -24,6 +24,7 @@ import { Logger } from 'tslog';
 
 const {
   ENDPOINT_URL,
+  WALLET_PATH,
   KEYPAIR,
   PROGRAM_ID,
   INTERVAL,
@@ -51,11 +52,11 @@ const serumProgramId = new PublicKey(
     ? 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'
     : 'EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj',
 );
-const walletFile = KEYPAIR || os.homedir() + '/.config/solana/devnet.json';
+const walletFile = WALLET_PATH || os.homedir() + '/.config/solana/devnet.json';
 const payer = Keypair.fromSecretKey(
   Uint8Array.from(
     JSON.parse(
-        fs.readFileSync(walletFile, 'utf-8'),
+      KEYPAIR || fs.readFileSync(walletFile, 'utf-8'),
     ),
   ),
 );
