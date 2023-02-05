@@ -21,7 +21,7 @@ import {
 } from '@project-serum/serum';
 import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Logger } from 'tslog';
-
+import axios  from "axios"
 const {
   ENDPOINT_URL,
   WALLET_PATH,
@@ -36,6 +36,7 @@ const {
   DEFAULT_CU_PRICE,     // extra microlamports per cu for any market
   PRIORITY_CU_PRICE,     // extra microlamports per cu for high fee markets
   PRIORITY_CU_LIMIT,     // compute limit
+  TOP_MARKET, // optional for using Top markets
 } = process.env;
 
 const cluster = CLUSTER || 'mainnet';
@@ -83,19 +84,39 @@ setInterval(
 
 
 async function run() {
-  const spotMarkets = await Promise.all(
-    markets[cluster].map((m) => {
-      return Market.load(
-        connection,
-        new PublicKey(m.address),
-        {
-          skipPreflight: true,
-          commitment: 'processed' as Commitment,
-        },
-        serumProgramId,
-      );
-    }),
-  );
+  let spotMarkets;
+  if (TOP_MARKET === 'false' || TOP_MARKET === undefined) {
+    spotMarkets = await Promise.all(
+      markets[cluster].map((m) => {
+        return Market.load(
+          connection,
+          new PublicKey(m.address),
+          {
+            skipPreflight: true,
+            commitment: 'processed' as Commitment,
+          },
+          serumProgramId,
+        );
+      }),
+    );
+  } else {
+    const { data } = await axios.get(
+      'https://openserum.io/api/serum/markets.json?min24hVolume=100000',
+    );
+    spotMarkets = await Promise.all(
+      data.map((m) => {
+        return Market.load(
+          connection,
+          new PublicKey(m.address),
+          {
+            skipPreflight: true,
+            commitment: 'processed' as Commitment,
+          },
+          serumProgramId,
+        );
+      }),
+    );
+  }
 
   const quoteToken = new Token(
     connection,
