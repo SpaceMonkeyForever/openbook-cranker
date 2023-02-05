@@ -38,7 +38,7 @@ const {
   DEFAULT_CU_PRICE, // extra microlamports per cu for any market
   PRIORITY_CU_PRICE, // extra microlamports per cu for high fee markets
   PRIORITY_CU_LIMIT, // compute limit
-  TOP_MARKET,
+  TOP_MARKET, // optional for using Top markets
 } = process.env;
 
 const cluster = CLUSTER || 'mainnet';
@@ -85,7 +85,7 @@ setInterval(
 
 async function run() {
   let spotMarkets;
-  if (TOP_MARKET === 'false') {
+  if (TOP_MARKET === 'false' || TOP_MARKET === undefined) {
     spotMarkets = await Promise.all(
       markets[cluster].map((m) => {
         return Market.load(
