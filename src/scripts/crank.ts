@@ -84,40 +84,28 @@ setInterval(
 
 
 async function run() {
-  let spotMarkets;
+  let marketsList;
   if (TOP_MARKET === 'false' || TOP_MARKET === undefined) {
-    spotMarkets = await Promise.all(
-      markets[cluster].map((m) => {
-        return Market.load(
-          connection,
-          new PublicKey(m.address),
-          {
-            skipPreflight: true,
-            commitment: 'processed' as Commitment,
-          },
-          serumProgramId,
-        );
-      }),
-    );
+    marketsList = markets[cluster]
   } else {
     const { data } = await axios.get(
       'https://openserum.io/api/serum/markets.json?min24hVolume=100000',
     );
-    spotMarkets = await Promise.all(
-      data.map((m) => {
-        return Market.load(
-          connection,
-          new PublicKey(m.address),
-          {
-            skipPreflight: true,
-            commitment: 'processed' as Commitment,
-          },
-          serumProgramId,
-        );
-      }),
-    );
+    marketsList = data
   }
-
+  const  spotMarkets = await Promise.all(
+    marketsList.map((m) => {
+      return Market.load(
+        connection,
+        new PublicKey(m.address),
+        {
+          skipPreflight: true,
+          commitment: 'processed' as Commitment,
+        },
+        serumProgramId,
+      );
+    }),
+  );
   const quoteToken = new Token(
     connection,
     spotMarkets[0].quoteMintAddress,
