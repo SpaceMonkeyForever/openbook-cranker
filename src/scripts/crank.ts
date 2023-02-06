@@ -22,6 +22,9 @@ import {
 import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Logger } from 'tslog';
 import axios  from "axios"
+
+const URL_MARKETS_BY_VOLUME = 'https://openserum.io/api/serum/markets.json?min24hVolume=';
+const VOLUME_THRESHOLD = 1000;
 const {
   ENDPOINT_URL,
   WALLET_PATH,
@@ -36,13 +39,14 @@ const {
   DEFAULT_CU_PRICE,     // extra microlamports per cu for any market
   PRIORITY_CU_PRICE,     // extra microlamports per cu for high fee markets
   PRIORITY_CU_LIMIT,     // compute limit
-  TOP_MARKET, // optional for using Top markets
+  POLL_MARKETS, // optional for using Top markets
 } = process.env;
 
 const cluster = CLUSTER || 'mainnet';
 const interval = INTERVAL || 1000;
 const maxUniqueAccounts = parseInt(MAX_UNIQUE_ACCOUNTS || '10');
 const consumeEventsLimit = new BN(CONSUME_EVENTS_LIMIT || '30');
+// FIXME: make this a list of pubkeys so that it works with POLL_MARKETS option
 const priorityMarkets: number[] = JSON.parse(HIGH_FEE_MARKETS || "[0,1]");
 const priorityQueueLimit = parseInt(PRIORITY_QUEUE_LIMIT || "100");
 const defaultPriorityCuPrice = parseInt(DEFAULT_CU_PRICE || "0");
@@ -82,33 +86,34 @@ setInterval(
   1000,
 );
 
-
 async function run() {
+  // list of markets to crank
   let marketsList;
   let count = 0;
   const TotalRetry = 3
-  if (TOP_MARKET === 'false' || TOP_MARKET === undefined) {
-    marketsList = markets[cluster]
-  } else {
-    while(count < TotalRetry){
+  if (POLL_MARKETS === 'true') {
+    while (count < TotalRetry) {
       try {
+        log.info(`Fetching markets from OpenSerum API (attempt ${count + 1}). Volume threshold: ${VOLUME_THRESHOLD}`);
         const { data } = await axios.get(
-          'https://openserum.io/api/serum/markets.json?min24hVolume=100000',
-          );
-          marketsList = data
-         break
-        }catch(e){
-          if(count > TotalRetry){
-            log.error(e);
-            throw e
-          }else {
-            count++
-            continue
-          }
+          URL_MARKETS_BY_VOLUME + VOLUME_THRESHOLD,
+        );
+        marketsList = data;
+        break;
+      } catch (e) {
+        if (count > TotalRetry) {
+          log.error(e);
+          throw e;
+        } else {
+          count++;
         }
+      }
     }
+  } else {
+    marketsList = markets[cluster];
   }
-  const  spotMarkets = await Promise.all(
+  // load selected markets
+  const spotMarkets = await Promise.all(
     marketsList.map((m) => {
       return Market.load(
         connection,
@@ -121,6 +126,10 @@ async function run() {
       );
     }),
   );
+
+  log.info("Cranking the following markets");
+  marketsList.forEach(m => log.info(`${m.name}: ${m.address}`));
+
   const quoteToken = new Token(
     connection,
     spotMarkets[0].quoteMintAddress,
