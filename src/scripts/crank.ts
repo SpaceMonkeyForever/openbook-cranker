@@ -85,13 +85,28 @@ setInterval(
 
 async function run() {
   let marketsList;
+  let count = 0;
+  const TotalRetry = 3
   if (TOP_MARKET === 'false' || TOP_MARKET === undefined) {
     marketsList = markets[cluster]
   } else {
-    const { data } = await axios.get(
-      'https://openserum.io/api/serum/markets.json?min24hVolume=100000',
-    );
-    marketsList = data
+    while(count < TotalRetry){
+      try {
+        const { data } = await axios.get(
+          'https://openserum.io/api/serum/markets.json?min24hVolume=100000',
+          );
+          marketsList = data
+         break
+        }catch(e){
+          if(count > TotalRetry){
+            log.error(e);
+            throw e
+          }else {
+            count++
+            continue
+          }
+        }
+    }
   }
   const  spotMarkets = await Promise.all(
     marketsList.map((m) => {
