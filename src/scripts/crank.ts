@@ -53,17 +53,17 @@ const defaultPriorityCuPrice = parseInt(DEFAULT_CU_PRICE || "0");
 const priorityCuPrice = parseInt(PRIORITY_CU_PRICE || "100000");
 const CuLimit = parseInt(PRIORITY_CU_LIMIT || "50000");
 const serumProgramId = new PublicKey(
-  PROGRAM_ID || cluster == 'mainnet'
-    ? 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'
-    : 'EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj',
+    PROGRAM_ID || cluster == 'mainnet'
+        ? 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'
+        : 'EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj',
 );
 const walletFile = WALLET_PATH || os.homedir() + '/.config/solana/devnet.json';
 const payer = Keypair.fromSecretKey(
-  Uint8Array.from(
-    JSON.parse(
-      KEYPAIR || fs.readFileSync(walletFile, 'utf-8'),
+    Uint8Array.from(
+        JSON.parse(
+            KEYPAIR || fs.readFileSync(walletFile, 'utf-8'),
+        ),
     ),
-  ),
 );
 
 const log: Logger = new Logger({name: "openbook-cranker", displayFunctionName: false, displayFilePath: "hidden", minLevel: "info"});
@@ -74,17 +74,16 @@ const connection = new Connection(ENDPOINT_URL!, 'processed' as Commitment);
 
 let recentBlockhash: BlockhashWithExpiryBlockHeight;
 connection.getLatestBlockhash(
-  "finalized"
+    "finalized"
 ).then((blockhash) => {recentBlockhash = blockhash;});
 
-setInterval(
-  async () =>
-    (recentBlockhash = await connection.getLatestBlockhash(
-      "finalized"
-    )),
-  // need to be frequent else we will be sending same TX signature often
-  1000,
-);
+setInterval(async function (){
+  try{
+    recentBlockhash = await connection.getLatestBlockhash("finalized");
+  }catch (error) {
+    log.error(error);
+  }
+},1000)
 
 async function run() {
   // list of markets to crank
@@ -96,7 +95,7 @@ async function run() {
       try {
         log.info(`Fetching markets from OpenSerum API (attempt ${count + 1}). Volume threshold: ${VOLUME_THRESHOLD}`);
         const { data } = await axios.get(
-          URL_MARKETS_BY_VOLUME + VOLUME_THRESHOLD,
+            URL_MARKETS_BY_VOLUME + VOLUME_THRESHOLD,
         );
         marketsList = data;
         break;
@@ -114,57 +113,57 @@ async function run() {
   }
   // load selected markets
   const spotMarkets = await Promise.all(
-    marketsList.map((m) => {
-      return Market.load(
-        connection,
-        new PublicKey(m.address),
-        {
-          skipPreflight: true,
-          commitment: 'processed' as Commitment,
-        },
-        serumProgramId,
-      );
-    }),
+      marketsList.map((m) => {
+        return Market.load(
+            connection,
+            new PublicKey(m.address),
+            {
+              skipPreflight: true,
+              commitment: 'processed' as Commitment,
+            },
+            serumProgramId,
+        );
+      }),
   );
 
   log.info("Cranking the following markets");
   marketsList.forEach(m => log.info(`${m.name}: ${m.address}`));
 
   const quoteToken = new Token(
-    connection,
-    spotMarkets[0].quoteMintAddress,
-    TOKEN_PROGRAM_ID,
-    payer,
+      connection,
+      spotMarkets[0].quoteMintAddress,
+      TOKEN_PROGRAM_ID,
+      payer,
   );
   const quoteWallet = await quoteToken
-    .getOrCreateAssociatedAccountInfo(payer.publicKey)
-    .then((a) => a.address);
+      .getOrCreateAssociatedAccountInfo(payer.publicKey)
+      .then((a) => a.address);
 
   const baseWallets = await Promise.all(
-    spotMarkets.map((m) => {
-      const token = new Token(
-        connection,
-        m.baseMintAddress,
-        TOKEN_PROGRAM_ID,
-        payer,
-      );
+      spotMarkets.map((m) => {
+        const token = new Token(
+            connection,
+            m.baseMintAddress,
+            TOKEN_PROGRAM_ID,
+            payer,
+        );
 
-      return token
-        .getOrCreateAssociatedAccountInfo(payer.publicKey)
-        .then((a) => a.address);
-    }),
+        return token
+            .getOrCreateAssociatedAccountInfo(payer.publicKey)
+            .then((a) => a.address);
+      }),
   );
 
   const eventQueuePks = spotMarkets.map(
-    (market) => market['_decoded'].eventQueue,
+      (market) => market['_decoded'].eventQueue,
   );
 
   // noinspection InfiniteLoopJS
   while (true) {
     try {
       const eventQueueAccts = await getMultipleAccounts(
-        connection,
-        eventQueuePks,
+          connection,
+          eventQueuePks,
       );
 
       for (let i = 0; i < eventQueueAccts.length; i++) {
@@ -186,8 +185,8 @@ async function run() {
         }
 
         const openOrdersAccounts = [...accounts]
-          .map((s) => new PublicKey(s))
-          .sort((a, b) => a.toBuffer().swap64().compare(b.toBuffer().swap64()));
+            .map((s) => new PublicKey(s))
+            .sort((a, b) => a.toBuffer().swap64().compare(b.toBuffer().swap64()));
 
         const instr = DexInstructions.consumeEvents({
           market: spotMarkets[i].publicKey,
@@ -202,16 +201,16 @@ async function run() {
           ...recentBlockhash,
         });
         transaction.add(
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: CuLimit,
-          })
+            ComputeBudgetProgram.setComputeUnitLimit({
+              units: CuLimit,
+            })
         );
         if (events.length > priorityQueueLimit) {
           const isHighFeeMarket = priorityMarkets.includes(i);
           transaction.add(
-            ComputeBudgetProgram.setComputeUnitPrice({
-              microLamports: isHighFeeMarket ? priorityCuPrice : defaultPriorityCuPrice,
-            })
+              ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: isHighFeeMarket ? priorityCuPrice : defaultPriorityCuPrice,
+              })
           );
         }
         transaction.add(instr);
