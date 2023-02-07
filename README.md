@@ -25,17 +25,16 @@ ENDPOINT_URL=... KEYPAIR=[1,3,4...] ./start-cranker.sh
 
 to run in the background, pass "-d" or "--daemon"
 
-env args to pay attention to:
+optional env args:
 
 ```
-  HIGH_FEE_MARKETS,      // markets to apply a priority fee for e.g. [0,1] to apply on the first two markets in markets.json
-  DEFAULT_CU_PRICE,     // extra microlamports per cu for any market
-  PRIORITY_CU_PRICE,     // extra microlamports per cu for high fee markets
+  BUMP_MARKETS          // comma seperated list to force PRIORITY_CU_PRICE for market addresses
+  CU_PRICE          // minimum additional micro lamports for all transactions
+  PRIORITY_QUEUE_LIMIT  // force PRIORITY_CU_PRICE for transactions when events exceed this value
+  PRIORITY_CU_PRICE     // additional micro lamports for BUMP_MARKETS & PRIORITY_QUEUE_LIMIT
 ```
 
 #### TODO:
 
-- Crank multiple markets in the same TX
-- Poll the list of top markets using https://openserum.io/api/serum/markets.json?min24hVolume=100000
 - Dynamic priority fee using getRecentPrioritizationFees
 - Dynamic frequency based on queue length

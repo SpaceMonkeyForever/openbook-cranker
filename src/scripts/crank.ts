@@ -10,7 +10,9 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  ComputeBudgetProgram, BlockhashWithExpiryBlockHeight,
+  ComputeBudgetProgram,
+  BlockhashWithExpiryBlockHeight,
+  TransactionInstruction,
 } from '@solana/web3.js';
 import { getMultipleAccounts, sleep } from '../utils/utils';
 import BN from 'bn.js';
@@ -34,24 +36,25 @@ const {
   MAX_UNIQUE_ACCOUNTS,
   CONSUME_EVENTS_LIMIT,
   CLUSTER,
-  HIGH_FEE_MARKETS,      // markets to apply a priority fee for
   PRIORITY_QUEUE_LIMIT,  // queue length at which to apply the priority fee
-  DEFAULT_CU_PRICE,     // extra microlamports per cu for any market
   PRIORITY_CU_PRICE,     // extra microlamports per cu for high fee markets
   PRIORITY_CU_LIMIT,     // compute limit
   POLL_MARKETS, // optional for using Top markets
+  MAX_TX_INSTRUCTIONS,   // max instructions per transaction
+  CU_PRICE,          // extra microlamports per cu for any transaction
+  PRIORITY_MARKETS,          // input to add comma seperated list of markets that force fee bump
 } = process.env;
 
 const cluster = CLUSTER || 'mainnet';
 const interval = INTERVAL || 1000;
 const maxUniqueAccounts = parseInt(MAX_UNIQUE_ACCOUNTS || '10');
 const consumeEventsLimit = new BN(CONSUME_EVENTS_LIMIT || '30');
-// FIXME: make this a list of pubkeys so that it works with POLL_MARKETS option
-const priorityMarkets: number[] = JSON.parse(HIGH_FEE_MARKETS || "[0,1]");
+const priorityMarkets = PRIORITY_MARKETS ? PRIORITY_MARKETS.split(',') : [] ;
 const priorityQueueLimit = parseInt(PRIORITY_QUEUE_LIMIT || "100");
-const defaultPriorityCuPrice = parseInt(DEFAULT_CU_PRICE || "0");
+const cuPrice = parseInt(CU_PRICE || "0");
 const priorityCuPrice = parseInt(PRIORITY_CU_PRICE || "100000");
 const CuLimit = parseInt(PRIORITY_CU_LIMIT || "50000");
+const maxTxInstructions = parseInt(MAX_TX_INSTRUCTIONS || "1");
 const serumProgramId = new PublicKey(
   PROGRAM_ID || cluster == 'mainnet'
     ? 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'
@@ -162,6 +165,9 @@ async function run() {
   // noinspection InfiniteLoopJS
   while (true) {
     try {
+      let crankInstructionsQueue: TransactionInstruction[] = [];
+      let instructionBumpMap = new Map();
+
       const eventQueueAccts = await getMultipleAccounts(
         connection,
         eventQueuePks,
@@ -198,33 +204,72 @@ async function run() {
           limit: consumeEventsLimit,
           programId: serumProgramId,
         });
-        const transaction = new Transaction({
-          ...recentBlockhash,
-        });
-        transaction.add(
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: CuLimit,
-          })
-        );
-        if (events.length > priorityQueueLimit) {
-          const isHighFeeMarket = priorityMarkets.includes(i);
-          transaction.add(
-            ComputeBudgetProgram.setComputeUnitPrice({
-              microLamports: isHighFeeMarket ? priorityCuPrice : defaultPriorityCuPrice,
-            })
-          );
+
+        crankInstructionsQueue.push(instr);
+
+        //if the queue is large then add the priority fee
+        if(events.length > priorityQueueLimit){
+          instructionBumpMap.set(instr,1);
         }
-        transaction.add(instr);
 
-        log.info(`market ${i} sending consume events for ${events.length} events`);
+        //bump transaction fee if market address is included in BUMP_MARKETS env
+        if(priorityMarkets.includes(spotMarkets[i].publicKey.toString())){
+          instructionBumpMap.set(instr,1);
+        }
 
-        transaction.sign(payer);
-        connection.sendRawTransaction(transaction.serialize(), {
-          skipPreflight: true,
-          maxRetries: 2,
-        }).then(x => log.info(`Cranked market ${i}: ${x}`));
+        log.info(`market ${spotMarkets[i].publicKey} creating consume events for ${events.length} events`);
+
       }
+
+      //send the crank transaction if there are markets that need cranked
+      if(crankInstructionsQueue.length > 0){
+
+        //chunk the instructions to ensure transactions are not too large
+        let chunkedCrankInstructions: any[] = [];
+        let chunkSize = maxTxInstructions;
+        for (let i = 0; i < crankInstructionsQueue.length; i += chunkSize) {
+          chunkedCrankInstructions.push(crankInstructionsQueue.slice(i, i + chunkSize));
+        }
+
+        chunkedCrankInstructions.forEach(function (transactionInstructions){
+
+          let shouldBumpFee = false;
+          let crankTransaction = new Transaction({... recentBlockhash});
+
+          crankTransaction.add(
+              ComputeBudgetProgram.setComputeUnitLimit({
+                units: (CuLimit * maxTxInstructions),
+              })
+          );
+
+          transactionInstructions.forEach(function (crankInstruction) {
+            //check the instruction for flag to bump fee
+            instructionBumpMap.get(crankInstruction) ? shouldBumpFee = true : null;
+            crankTransaction.add(crankInstruction);
+          });
+
+          if(shouldBumpFee || cuPrice){
+            crankTransaction.add(
+                ComputeBudgetProgram.setComputeUnitPrice({
+                  microLamports: shouldBumpFee ? priorityCuPrice : cuPrice,
+                })
+            );
+          }
+
+          crankTransaction.sign(payer);
+
+          //send the transaction
+          connection.sendRawTransaction(crankTransaction.serialize(), {
+            skipPreflight: true,
+            maxRetries: 2,
+          }).then(txId => log.info(`Cranked ${transactionInstructions.length} market(s): ${txId}`));
+
+        })
+
+      }
+
       await sleep(interval);
+
     } catch (e) {
       log.error(e);
     }
