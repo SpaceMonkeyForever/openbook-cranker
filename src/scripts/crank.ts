@@ -77,14 +77,13 @@ connection.getLatestBlockhash(
   "finalized"
 ).then((blockhash) => {recentBlockhash = blockhash;});
 
-setInterval(
-  async () =>
-    (recentBlockhash = await connection.getLatestBlockhash(
-      "finalized"
-    )),
-  // need to be frequent else we will be sending same TX signature often
-  1000,
-);
+setInterval(async function (){
+  try{
+    recentBlockhash = await connection.getLatestBlockhash("finalized");
+  }catch (error) {
+    log.error(error);
+  }
+},1000)
 
 async function run() {
   // list of markets to crank
