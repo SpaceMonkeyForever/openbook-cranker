@@ -72,16 +72,23 @@ log.info(payer.publicKey.toString());
 
 const connection = new Connection(ENDPOINT_URL!, 'processed' as Commitment);
 
+// blockhash loop
 let recentBlockhash: BlockhashWithExpiryBlockHeight;
-connection.getLatestBlockhash(
-  "finalized"
-).then((blockhash) => {recentBlockhash = blockhash;});
-
-setInterval(async function (){
-  try{
+try {
+  connection.getLatestBlockhash(
+    "finalized"
+  ).then((blockhash) => {
+    recentBlockhash = blockhash;
+  });
+}
+catch (e) {
+  log.error(`Couldn't get blockhash: ${e}`);
+}
+setInterval(async () => {
+  try {
     recentBlockhash = await connection.getLatestBlockhash("finalized");
-  }catch (error) {
-    log.error(error);
+  } catch (e) {
+    log.error(`Couldn't get blockhash: ${e}`);
   }
 },1000)
 
