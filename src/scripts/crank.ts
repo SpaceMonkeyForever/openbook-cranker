@@ -245,7 +245,6 @@ async function run() {
           transactionInstructions.forEach(function (crankInstruction) {
             //check the instruction for flag to bump fee
             instructionBumpMap.get(crankInstruction) ? shouldBumpFee = true : null;
-            crankTransaction.add(crankInstruction);
           });
 
           if(shouldBumpFee || cuPrice){
@@ -255,6 +254,8 @@ async function run() {
                 })
             );
           }
+
+          crankTransaction.add(...transactionInstructions);
 
           crankTransaction.sign(payer);
 
