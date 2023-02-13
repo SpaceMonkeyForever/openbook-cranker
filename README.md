@@ -39,6 +39,12 @@ to run in the background, pass "-d" or "--daemon"
                        // every market.
   INTERVAL             // Sleep interval, in ms, between each loop. Default is 
                        // 1000 ms
+  MARKETS_FILE         // Specify the full path to an alternate markets.json 
+                       // file. Default is '../markets.json'. This option will
+                       // let you run multiple instances with different 
+                       // settings for the markets. e.g. bump with "high fees"
+                       // or "medium fees" or other markets not included in the
+                       // default markets.json file.
   MAX_TX_INSTRUCTIONS  // Max number of instructions for each transaction. 
                        // Default is 1.
   MAX_UNIQUE_ACCOUNTS  // Max number of unique accounts to process in each
