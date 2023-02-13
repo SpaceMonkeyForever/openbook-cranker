@@ -3,7 +3,6 @@
  */
 import * as os from 'os';
 import * as fs from 'fs';
-import markets from '../markets.json';
 import {
   Keypair,
   Commitment,
@@ -43,7 +42,12 @@ const {
   MAX_TX_INSTRUCTIONS,  // max instructions per transaction
   CU_PRICE,             // extra microlamports per cu for any transaction
   PRIORITY_MARKETS,     // input to add comma seperated list of markets that force fee bump
+  MARKETS_FILE          // Specify the full path to an alternate markets.json file.
 } = process.env;
+
+// Read the alternate markets file if provided
+const marketsFile = MARKETS_FILE || '../markets.json';
+const markets = require(marketsFile);
 
 const cluster = CLUSTER || 'mainnet';
 const interval = INTERVAL || 1000;
