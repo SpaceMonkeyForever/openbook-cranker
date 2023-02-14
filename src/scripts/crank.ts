@@ -3,7 +3,6 @@
  */
 import * as os from 'os';
 import * as fs from 'fs';
-import markets from '../markets.json';
 import {
   Keypair,
   Commitment,
@@ -36,14 +35,19 @@ const {
   MAX_UNIQUE_ACCOUNTS,
   CONSUME_EVENTS_LIMIT,
   CLUSTER,
-  PRIORITY_QUEUE_LIMIT,  // queue length at which to apply the priority fee
-  PRIORITY_CU_PRICE,     // extra microlamports per cu for high fee markets
-  PRIORITY_CU_LIMIT,     // compute limit
-  POLL_MARKETS, // optional for using Top markets
-  MAX_TX_INSTRUCTIONS,   // max instructions per transaction
-  CU_PRICE,          // extra microlamports per cu for any transaction
-  PRIORITY_MARKETS,          // input to add comma seperated list of markets that force fee bump
+  PRIORITY_QUEUE_LIMIT, // queue length at which to apply the priority fee
+  PRIORITY_CU_PRICE,    // extra microlamports per cu for high fee markets
+  PRIORITY_CU_LIMIT,    // compute limit
+  POLL_MARKETS,         // optional for using Top markets
+  MAX_TX_INSTRUCTIONS,  // max instructions per transaction
+  CU_PRICE,             // extra microlamports per cu for any transaction
+  PRIORITY_MARKETS,     // input to add comma seperated list of markets that force fee bump
+  MARKETS_FILE          // Specify the full path to an alternate markets.json file.
 } = process.env;
+
+// Read the alternate markets file if provided
+const marketsFile = MARKETS_FILE || '../markets.json';
+const markets = require(marketsFile);
 
 const cluster = CLUSTER || 'mainnet';
 const interval = INTERVAL || 1000;
@@ -218,7 +222,7 @@ async function run() {
           instructionBumpMap.set(instr,1);
         }
 
-        //bump transaction fee if market address is included in BUMP_MARKETS env
+        //bump transaction fee if market address is included in PRIORITY_MARKETS env
         if(priorityMarkets.includes(spotMarkets[i].publicKey.toString())){
           instructionBumpMap.set(instr,1);
         }
