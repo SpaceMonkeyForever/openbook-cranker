@@ -13,6 +13,7 @@ export async function getMultipleAccounts(
   connection: Connection,
   publicKeys: PublicKey[],
   commitment?: Commitment,
+  minContextSlot?: number,
 ): Promise<
   {
     publicKey: PublicKey;
@@ -32,10 +33,15 @@ export async function getMultipleAccounts(
     ]).then((a) => a[0].concat(a[1]));
   }
   const publicKeyStrs = publicKeys.map((pk) => pk.toBase58());
+
   // load connection commitment as a default
   commitment ||= connection.commitment;
 
-  const args = commitment ? [publicKeyStrs, { commitment }] : [publicKeyStrs];
+  // set no minimum context slot by default
+  minContextSlot ||= 0;
+
+  const args = commitment ? [publicKeyStrs, { commitment,minContextSlot }] : [publicKeyStrs, {minContextSlot}];
+
   // @ts-ignore
   const resp = await connection._rpcRequest('getMultipleAccounts', args);
   if (resp.error) {
