@@ -45,7 +45,7 @@ export async function getMultipleAccounts(
   //use zstd to compress large responses
   let encoding = 'base64+zstd';
 
-  const args = commitment ? [publicKeyStrs, {commitment, encoding,minContextSlot}] : [publicKeyStrs, {encoding,minContextSlot}];
+  const args = [publicKeyStrs, {commitment,encoding,minContextSlot}];
 
   // @ts-ignore
   const resp = await connection._rpcRequest('getMultipleAccounts', args);
