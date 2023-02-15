@@ -20,13 +20,11 @@ export async function getMultipleAccounts(
   publicKeys: PublicKey[],
   commitment?: Commitment,
   minContextSlot?: number,
-): Promise<
-  {
-    publicKey: PublicKey;
-    context: { slot: number };
-    accountInfo: AccountInfo<Buffer>;
-  }[]
-> {
+): Promise<{
+  publicKey: PublicKey;
+  context: { slot: number };
+  accountInfo: AccountInfo<Buffer>;
+}[]> {
 
   if (!publicKeys.length) {
     throw new Error('no Public Keys provided to getMultipleAccounts');
