@@ -13,7 +13,7 @@ import {
   BlockhashWithExpiryBlockHeight,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { getMultipleAccounts, sleep } from '../utils/utils';
+import { getMultipleAccounts, sleep, chunk } from '../utils/utils';
 import BN from 'bn.js';
 import {
   decodeEventQueue,
@@ -243,11 +243,7 @@ async function run() {
       if(crankInstructionsQueue.length > 0){
 
         //chunk the instructions to ensure transactions are not too large
-        let chunkedCrankInstructions: any[] = [];
-        let chunkSize = maxTxInstructions;
-        for (let i = 0; i < crankInstructionsQueue.length; i += chunkSize) {
-          chunkedCrankInstructions.push(crankInstructionsQueue.slice(i, i + chunkSize));
-        }
+        let chunkedCrankInstructions = chunk(crankInstructionsQueue, maxTxInstructions);
 
         chunkedCrankInstructions.forEach(function (transactionInstructions){
 
