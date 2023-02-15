@@ -40,24 +40,24 @@ export async function getMultipleAccounts(
 
     // load connection commitment as a default
     commitment ||= connection.commitment;
-    // set no minimum context slot by default
-    minContextSlot ||= 0;
     //use zstd to compress large responses
     let encoding = 'base64+zstd';
+    // set no minimum context slot by default
+    minContextSlot ||= 0;
 
     const args = [pkChunk, {commitment, encoding, minContextSlot}];
 
     // @ts-ignore
-    const resp = await connection._rpcRequest('getMultipleAccounts', args);
+    const gmaResult = await connection._rpcRequest('getMultipleAccounts', args);
 
-    if (resp.error) {
-      throw new Error(resp.error.message);
+    if (gmaResult.error) {
+      throw new Error(gmaResult.error.message);
     }
 
-    return resp.result.value.map(
+    return gmaResult.result.value.map(
       ({data, executable, lamports, owner}, i) => ({
         publicKey: pkChunk[i],
-        context: resp.result.context,
+        context: gmaResult.result.context,
         accountInfo: {
           data: Buffer.from(fzstd.decompress(Buffer.from(data[0], 'base64'))),
           executable,
