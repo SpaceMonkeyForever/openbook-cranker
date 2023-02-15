@@ -11,66 +11,59 @@ export async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function chunk(array, size) {
+  return Array.apply(0, new Array(Math.ceil(array.length / size))).map((_, index) => array.slice(index * size, (index + 1) * size));
+}
+
 export async function getMultipleAccounts(
   connection: Connection,
   publicKeys: PublicKey[],
   commitment?: Commitment,
   minContextSlot?: number,
-): Promise<
-  {
-    publicKey: PublicKey;
-    context: { slot: number };
-    accountInfo: AccountInfo<Buffer>;
-  }[]
-> {
-  const len = publicKeys.length;
-  if (len === 0) {
-    return [];
+): Promise<{
+  publicKey: PublicKey;
+  context: { slot: number };
+  accountInfo: AccountInfo<Buffer>;
+}[]> {
+
+  if (!publicKeys.length) {
+    throw new Error('no Public Keys provided to getMultipleAccounts');
   }
-  if (len > 100) {
-    const mid = Math.floor(publicKeys.length / 2);
-    return Promise.all([
-      getMultipleAccounts(connection, publicKeys.slice(0, mid), commitment),
-      getMultipleAccounts(connection, publicKeys.slice(mid, len), commitment),
-    ]).then((a) => a[0].concat(a[1]));
-  }
-  const publicKeyStrs = publicKeys.map((pk) => pk.toBase58());
 
-  // load connection commitment as a default
-  commitment ||= connection.commitment;
+  //set the maximum number of accounts per call
+  let chunkedPks = chunk(publicKeys, 100);
 
-  // set no minimum context slot by default
-  minContextSlot ||= 0;
+  //asynchronously fetch each chunk of accounts and combine the results
+  return (await Promise.all(chunkedPks.map(async function (pkChunk) {
 
-  //use zstd to compress large responses
-  let encoding = 'base64+zstd';
+    // load connection commitment as a default
+    commitment ||= connection.commitment;
+    //use zstd to compress large responses
+    let encoding = 'base64+zstd';
+    // set no minimum context slot by default
+    minContextSlot ||= 0;
 
-  const args = [publicKeyStrs, {commitment,encoding,minContextSlot}];
+    const args = [pkChunk, {commitment, encoding, minContextSlot}];
 
-  // @ts-ignore
-  const resp = await connection._rpcRequest('getMultipleAccounts', args);
-  if (resp.error) {
-    throw new Error(resp.error.message);
-  }
-  if (resp.result) {
-    const nullResults = resp.result.value.filter((r) => r?.account === null);
-    if (nullResults.length > 0)
-      throw new Error(
-        `gma returned ${
-          nullResults.length
-        } null results. ex: ${nullResults[0]?.pubkey.toString()}`,
-      );
-  }
-  return resp.result.value.map(
-    ({ data, executable, lamports, owner }, i: number) => ({
-      publicKey: publicKeys[i],
-      context: resp.result.context,
-      accountInfo: {
-        data: Buffer.from(fzstd.decompress(Buffer.from(data[0], 'base64'))),
-        executable,
-        owner: new PublicKey(owner),
-        lamports,
-      },
-    }),
-  );
+    // @ts-ignore
+    const gmaResult = await connection._rpcRequest('getMultipleAccounts', args);
+
+    if (gmaResult.error) {
+      throw new Error(gmaResult.error.message);
+    }
+
+    return gmaResult.result.value.map(
+      ({data, executable, lamports, owner}, i) => ({
+        publicKey: pkChunk[i],
+        context: gmaResult.result.context,
+        accountInfo: {
+          data: Buffer.from(fzstd.decompress(Buffer.from(data[0], 'base64'))),
+          executable,
+          owner: new PublicKey(owner),
+          lamports,
+        },
+      }),
+    );
+  }))).flat();
+
 }
