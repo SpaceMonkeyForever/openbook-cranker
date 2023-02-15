@@ -5,6 +5,8 @@ import {
   PublicKey,
 } from '@solana/web3.js';
 
+import * as fzstd from 'fzstd';
+
 export async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -40,7 +42,10 @@ export async function getMultipleAccounts(
   // set no minimum context slot by default
   minContextSlot ||= 0;
 
-  const args = commitment ? [publicKeyStrs, { commitment,minContextSlot }] : [publicKeyStrs, {minContextSlot}];
+  //use zstd to compress large responses
+  let encoding = 'base64+zstd';
+
+  const args = [publicKeyStrs, {commitment,encoding,minContextSlot}];
 
   // @ts-ignore
   const resp = await connection._rpcRequest('getMultipleAccounts', args);
@@ -61,7 +66,7 @@ export async function getMultipleAccounts(
       publicKey: publicKeys[i],
       context: resp.result.context,
       accountInfo: {
-        data: Buffer.from(data[0], 'base64'),
+        data: Buffer.from(fzstd.decompress(Buffer.from(data[0], 'base64'))),
         executable,
         owner: new PublicKey(owner),
         lamports,
