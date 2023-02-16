@@ -98,7 +98,7 @@ export async function loadMultipleOpenbookMarkets(connection,programId,marketsLi
 
   //get all the token's decimal values
   const MINT_LAYOUT = buffer_layout.struct([buffer_layout.blob(44), buffer_layout.u8('decimals'), buffer_layout.blob(37)]);
-  let uniqueMintsPubKeys = Array.from(uniqueMints);
+  let uniqueMintsPubKeys: any[] = Array.from(uniqueMints);
   let uniqueMintsAccountInfos = await getMultipleAccounts(connection, uniqueMintsPubKeys, 'processed');
   uniqueMintsAccountInfos.forEach(function (result) {
     const {decimals} = MINT_LAYOUT.decode(result.accountInfo.data);
