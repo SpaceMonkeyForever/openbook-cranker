@@ -259,6 +259,7 @@ async function run() {
           transactionInstructions.forEach(function (crankInstruction) {
             //check the instruction for flag to bump fee
             instructionBumpMap.get(crankInstruction) ? shouldBumpFee = true : null;
+            instructionBumpMap.delete(crankInstruction);
           });
 
           if(shouldBumpFee || cuPrice){
