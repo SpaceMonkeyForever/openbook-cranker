@@ -13,7 +13,7 @@ import {
   BlockhashWithExpiryBlockHeight,
   TransactionInstruction,
 } from '@solana/web3.js';
-import {getMultipleAccounts,loadMultipleOpenbookMarkets,getMultipleTokenAccounts,  sleep,  chunk} from '../utils/utils';
+import {getMultipleAccounts,loadMultipleOpenbookMarkets,getMultipleAssociatedTokenAddresses,  sleep,  chunk} from '../utils/utils';
 import BN from 'bn.js';
 import {decodeEventQueue, DexInstructions} from '@project-serum/serum';
 import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -142,7 +142,7 @@ async function run() {
   const tokenAccounts = spotMarkets.map(
     (market) => market['_decoded'].baseMint
   );
-  const baseWallets = await getMultipleTokenAccounts(connection,payer,tokenAccounts);
+  const baseWallets = await getMultipleAssociatedTokenAddresses(connection,payer,tokenAccounts);
 
   const eventQueuePks = spotMarkets.map(
     (market) => market['_decoded'].eventQueue,

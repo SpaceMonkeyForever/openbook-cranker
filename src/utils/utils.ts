@@ -118,7 +118,8 @@ export async function loadMultipleOpenbookMarkets(connection,programId,marketsLi
 }
 
 //get the associated accounts but don't check if they exist.
-export async function getMultipleTokenAccounts(connection,owner,tokenAccounts){
+//connection is passed to constructor but no RPC calls are made.
+export async function getMultipleAssociatedTokenAddresses(connection,owner,tokenAccounts){
 
   //token.associatedProgramId & token.programId will be the same for each token
   const token = new Token(connection, tokenAccounts[0].toString(), TOKEN_PROGRAM_ID, owner);
