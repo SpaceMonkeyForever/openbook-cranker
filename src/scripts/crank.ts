@@ -13,13 +13,9 @@ import {
   BlockhashWithExpiryBlockHeight,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { getMultipleAccounts, sleep, chunk } from '../utils/utils';
+import {getMultipleAccounts,loadMultipleOpenbookMarkets,getMultipleAssociatedTokenAddresses,  sleep,  chunk} from '../utils/utils';
 import BN from 'bn.js';
-import {
-  decodeEventQueue,
-  DexInstructions,
-  Market,
-} from '@project-serum/serum';
+import {decodeEventQueue, DexInstructions} from '@project-serum/serum';
 import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Logger } from 'tslog';
 import axios  from "axios"
@@ -125,20 +121,9 @@ async function run() {
   } else {
     marketsList = markets[cluster];
   }
+
   // load selected markets
-  const spotMarkets = await Promise.all(
-    marketsList.map((m) => {
-      return Market.load(
-        connection,
-        new PublicKey(m.address),
-        {
-          skipPreflight: true,
-          commitment: 'processed' as Commitment,
-        },
-        serumProgramId,
-      );
-    }),
-  );
+  let spotMarkets = await loadMultipleOpenbookMarkets(connection,serumProgramId,marketsList);
 
   log.info("Cranking the following markets");
   marketsList.forEach(m => log.info(`${m.name}: ${m.address}`));
@@ -153,20 +138,11 @@ async function run() {
     .getOrCreateAssociatedAccountInfo(payer.publicKey)
     .then((a) => a.address);
 
-  const baseWallets = await Promise.all(
-    spotMarkets.map((m) => {
-      const token = new Token(
-        connection,
-        m.baseMintAddress,
-        TOKEN_PROGRAM_ID,
-        payer,
-      );
-
-      return token
-        .getOrCreateAssociatedAccountInfo(payer.publicKey)
-        .then((a) => a.address);
-    }),
+  //get the token accounts for each basemint & the associated account address for our token account
+  const tokenAccounts = spotMarkets.map(
+    (market) => market['_decoded'].baseMint
   );
+  const baseWallets = await getMultipleAssociatedTokenAddresses(connection,payer,tokenAccounts);
 
   const eventQueuePks = spotMarkets.map(
     (market) => market['_decoded'].eventQueue,
