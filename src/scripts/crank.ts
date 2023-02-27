@@ -1,6 +1,3 @@
-/**
- This will probably move to its own repo at some point but easier to keep it here for now
- */
 import * as os from 'os';
 import * as fs from 'fs';
 import {
@@ -13,12 +10,11 @@ import {
   BlockhashWithExpiryBlockHeight,
   TransactionInstruction,
 } from '@solana/web3.js';
-import {getMultipleAccounts,loadMultipleOpenbookMarkets,getMultipleAssociatedTokenAddresses,  sleep,  chunk} from '../utils/utils';
+import {getMultipleAccounts, loadMultipleOpenbookMarkets, sleep, chunk} from '../utils/utils';
 import BN from 'bn.js';
 import {decodeEventQueue, DexInstructions} from '@project-serum/serum';
-import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { Logger } from 'tslog';
-import axios  from "axios"
+import {Logger} from 'tslog';
+import axios from "axios";
 
 const URL_MARKETS_BY_VOLUME = 'https://openserum.io/api/serum/markets.json?min24hVolume=';
 const VOLUME_THRESHOLD = 1000;
@@ -128,22 +124,6 @@ async function run() {
   log.info("Cranking the following markets");
   marketsList.forEach(m => log.info(`${m.name}: ${m.address}`));
 
-  const quoteToken = new Token(
-    connection,
-    spotMarkets[0].quoteMintAddress,
-    TOKEN_PROGRAM_ID,
-    payer,
-  );
-  const quoteWallet = await quoteToken
-    .getOrCreateAssociatedAccountInfo(payer.publicKey)
-    .then((a) => a.address);
-
-  //get the token accounts for each basemint & the associated account address for our token account
-  const tokenAccounts = spotMarkets.map(
-    (market) => market['_decoded'].baseMint
-  );
-  const baseWallets = await getMultipleAssociatedTokenAddresses(connection,payer,tokenAccounts);
-
   const eventQueuePks = spotMarkets.map(
     (market) => market['_decoded'].eventQueue,
   );
@@ -189,11 +169,13 @@ async function run() {
           .map((s) => new PublicKey(s))
           .sort((a, b) => a.toBuffer().swap64().compare(b.toBuffer().swap64()));
 
+        //coinFee & pcFee are redundant for cranking. Instead, we pass spotMarkets[i]['_decoded'].eventQueue
+        //using duplicate accounts will reduce transaction size
         const instr = DexInstructions.consumeEvents({
           market: spotMarkets[i].publicKey,
           eventQueue: spotMarkets[i]['_decoded'].eventQueue,
-          coinFee: baseWallets[i],
-          pcFee: quoteWallet,
+          coinFee: spotMarkets[i]['_decoded'].eventQueue,
+          pcFee: spotMarkets[i]['_decoded'].eventQueue,
           openOrdersAccounts,
           limit: consumeEventsLimit,
           programId: serumProgramId,
@@ -258,8 +240,6 @@ async function run() {
         })
 
       }
-
-
 
     } catch (e) {
       if (e instanceof Error) {
