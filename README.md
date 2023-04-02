@@ -32,7 +32,7 @@ to run in the background, pass "-d" or "--daemon"
   CLUSTER              // Cluster to use. 'mainnet' or 'devnet'. Default is 
                        // mainnet.
   CONSUME_EVENTS_LIMIT // Max number of events to consume in each TX. Default is
-                       // 30 events.
+                       // 19 events.
   CU_PRICE             // Minimum additional micro lamports for all 
                        // transactions. Default is 0. Raise this above 0 if
                        // you want all transactions to pay a priority fee for 
