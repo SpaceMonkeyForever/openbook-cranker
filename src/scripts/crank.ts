@@ -235,7 +235,9 @@ async function run() {
           connection.sendRawTransaction(crankTransaction.serialize(), {
             skipPreflight: true,
             maxRetries: 2,
-          }).then(txId => log.info(`Cranked ${transactionInstructions.length} market(s): ${txId}`));
+          }).then(txId => log.info(`Cranked ${transactionInstructions.length} market(s): ${txId}`)).catch(function (e){
+            log.warn('failed to send tx.. ' + e.message);
+          });
 
         })
 
