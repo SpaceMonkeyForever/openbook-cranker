@@ -34,7 +34,8 @@ const {
   MAX_TX_INSTRUCTIONS,  // max instructions per transaction
   CU_PRICE,             // extra microlamports per cu for any transaction
   PRIORITY_MARKETS,     // input to add comma seperated list of markets that force fee bump
-  MARKETS_FILE          // Specify the full path to an alternate markets.json file.
+  MARKETS_FILE,          // Specify the full path to an alternate markets.json file.
+  MIN_QUEUE_LENGTH,      // minimum queue length to crank
 } = process.env;
 
 // Read the alternate markets file if provided
@@ -51,6 +52,7 @@ const cuPrice = parseInt(CU_PRICE || "0");
 const priorityCuPrice = parseInt(PRIORITY_CU_PRICE || "100000");
 const CuLimit = parseInt(PRIORITY_CU_LIMIT || "50000");
 const maxTxInstructions = parseInt(MAX_TX_INSTRUCTIONS || "1");
+const minQueueLength = parseInt(MIN_QUEUE_LENGTH || "0");
 const serumProgramId = new PublicKey(
   PROGRAM_ID || cluster == 'mainnet'
     ? 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'
@@ -67,7 +69,24 @@ const payer = Keypair.fromSecretKey(
 
 const log: Logger = new Logger({name: "openbook-cranker", displayFunctionName: false, displayFilePath: "hidden", minLevel: "info"});
 
-log.info(payer.publicKey.toString());
+// log all params formatted nicely:
+log.info(`PAYER: ${payer.publicKey.toBase58()}`);
+log.info(`ENDPOINT_URL: ${ENDPOINT_URL}`);
+log.info(`PROGRAM_ID: ${serumProgramId}`);
+log.info(`CLUSTER: ${cluster}`);
+log.info(`WALLET_PATH: ${walletFile}`);
+log.info(`INTERVAL: ${interval}`);
+log.info(`POLL_MARKETS: ${POLL_MARKETS}`);
+log.info(`MARKETS_FILE: ${marketsFile}`);
+log.info(`MIN_QUEUE_LENGTH: ${minQueueLength}`);
+log.info(`MAX_UNIQUE_ACCOUNTS: ${maxUniqueAccounts}`);
+log.info(`MAX_TX_INSTRUCTIONS: ${maxTxInstructions}`);
+log.info(`CONSUME_EVENTS_LIMIT: ${consumeEventsLimit}`);
+log.info(`PRIORITY_MARKETS: ${priorityMarkets}`);
+log.info(`PRIORITY_QUEUE_LIMIT: ${priorityQueueLimit}`);
+log.info(`CU_PRICE: ${cuPrice}`);
+log.info(`PRIORITY_CU_PRICE: ${priorityCuPrice}`);
+log.info(`PRIORITY_CU_LIMIT: ${CuLimit}`);
 
 const connection = new Connection(ENDPOINT_URL!, 'processed' as Commitment);
 
@@ -153,6 +172,10 @@ async function run() {
 
         if (events.length === 0) {
           continue;
+        }
+        else if(events.length < minQueueLength){
+            log.info(`market ${spotMarkets[i].publicKey} skipping consume events for ${events.length} events`);
+            continue;
         }
 
         const accounts: Set<string> = new Set();

@@ -554,6 +554,11 @@ fs.realpath@^1.0.0:
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
   integrity sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==
 
+fzstd@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/fzstd/-/fzstd-0.1.0.tgz#1d7bccb5f819e2d073a15fccea1adb7fdc7a46a9"
+  integrity sha512-TTvznnpde1rTv/3FOmZMbPCh75gqkJ9dKJdsKmcNiXh4olLJl3eRahHJcGzyPZjuVaytffP02Or4z5avDvqKQA==
+
 glob@^8.0.3:
   version "8.1.0"
   resolved "https://registry.yarnpkg.com/glob/-/glob-8.1.0.tgz#d388f656593ef708ee3e34640fdfb99a9fd1c33e"
