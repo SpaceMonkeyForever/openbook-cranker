@@ -174,7 +174,7 @@ async function run() {
           continue;
         }
         else if(events.length < minQueueLength){
-            log.info(`market ${spotMarkets[i].publicKey} skipping consume events for ${events.length} events`);
+            log.info(`market [${marketsList[i].name}]\t[${spotMarkets[i].publicKey}] skipping consume events for ${events.length} events`);
             continue;
         }
 
@@ -216,7 +216,7 @@ async function run() {
           instructionBumpMap.set(instr,1);
         }
 
-        log.info(`market ${spotMarkets[i].publicKey} creating consume events for ${events.length} events`);
+        log.info(`market [${marketsList[i].name}]\t[${spotMarkets[i].publicKey}] creating consume events for ${events.length} events`);
 
       }
 
