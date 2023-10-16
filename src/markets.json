@@ -22,7 +22,12 @@
     },
     {
       "address": "BbJgE7HZMaDp5NTYvRh5jZSkQPVDTU8ubPFtpogUkEj4",
-      "name": "ETH/USDC",
+      "name": "wETH/USDC",
+      "programId": "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
+    },
+    {
+      "address": "3BAKsQd3RuhZKES2DGysMhjBdwjZYKYmxRqnSMtZ4KSN",
+      "name": "wBTC/USDC",
       "programId": "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
     },
     {
